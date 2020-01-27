@@ -1,0 +1,39 @@
+Virtual Machines VS Containers
+From an isolation perspective
+21 Feb 2020
+Tags: containers,virtual machine,isolation,confinement,security
+
+Francesco Romani
+Senior Software Engineer, Red Hat
+fromani {gmail,redhat}
+http://github.com/{mojaves,fromanirh}
+
+* whoami
+
+- sweng @ Red Hat: opinions and mistakes are my own!
+- works daily(-ish): golang, kubernetes, podman
+- interested in: more, golang, more containers, lisp (someday!)
+- happy linux user (red hat linux, debian, ubuntu, fedora)
+- geek
+
+* Outline
+
+- Dramatis personae: VMs & containers
+- Isolation technologies
+- The Fallout
+
+* STANDARD DISCLAIMER
+
+Software Engineer, not security expert!
+
+Mistakes may happen - please point them out!
+
+All opionions are mine only
+
+* Dramatis personae: VMs & containers
+
+* Isolation technologies
+
+* The fallout
+
+* Q? A!
