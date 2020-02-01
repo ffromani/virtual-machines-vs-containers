@@ -32,7 +32,327 @@ All opionions are mine only
 
 * Dramatis personae: VMs & containers
 
+* Virtual Machines
+
+"A virtual machine (VM) is an emulation of a computer system. Virtual machines are based on computer architectures and provide functionality of a physical computer."
+
+"[...] virtual machines [...] provide a substitute for a real machine. They provide functionality needed to execute entire operating systems."
+
+"Modern hypervisors use hardware-assisted virtualization, virtualization-specific hardware, primarily from the host CPUs."
+
+.link https://en.wikipedia.org/wiki/Virtual_machine source: wikipedia
+
+That's QEMU+KVM(+virtio)
+
+* Virtual Machines (2)
+
+.image images/diagrams/vms.png 520 _
+.caption "(Linux) Virtual machine block diagram" - (C) Francesco Romani 2019 - CC by-sa 4.0
+
+* Containers
+
+A (Linux) container is a set of one or more processes isolated from the rest of the system, using facilities of the Linux kernel
+
+.link https://en.wikipedia.org/wiki/List_of_Linux_containers source: not actual quote, amalgamation.
+
+That's cgroups+seccomp+selinux+namespaces... All conveniently packed in a container runtime (cri-o, docker, rkt...)
+
+* Containers (2)
+
+.image images/diagrams/containers.png 520 _
+.caption "(Linux) Containers block diagram" - (C) Francesco Romani 2019 - CC by-sa 4.0
+
+* Virtual Machines vs Containers
+
+.image images/diagrams/vms_vs_containers.png 520 _
+.caption "(Linux) VMs vs Containers block diagram" - (C) Francesco Romani 2019 - CC by-sa 4.0
+
+* Are containers the next step after VMs?
+
+Everyone is talking about containers now!
+
+Everyone was crazed about VMs back in the early 2000s
+
+
+* The right tool for the right job?
+
+Are Containers and VMs competing technologies?
+
+Which problem are we trying to solve?
+
+Different tools shape different solutions ("if you have a hammer...")
+
+No real autopick (sorry!)
+
+* Containerized applications
+
+A containerized application is the set of files needed to an application to run as container, packaged in a specific format (image).
+
+.image images/Container_crane_and_MSC_Sola.jpg 400 _
+.caption "Containers are being loaded on the container ship MSC Sola at the container terminal of Bremerhaven in Germany" by Tvabutzku1234, public domain, from Wikimedia Commons
+
+* Appliances
+
+TBD
+
 * Isolation technologies
+
+* A recipe for containers
+The basic building blocks:
+- namespaces: process isolation
+- cgroups: resource limits
+
+Security enforcement tools:
+- seccomp: limit syscall usage
+- SELinux: mandatory access control
+- linux capabilities: finer-grained privileges
+
+* Namespaces: Intro
+
+Inception: ~2002; major developments ~2006 and onwards.
+
+A namespace...
+
+  wraps a global system resource in an abstraction that makes it appear to the processes
+  within the namespace that they have their own isolated instance of the global resource.
+  [...]
+  One use of namespaces is to implement containers.
+
+Namespaces are _ephemeral_ by default: they are tied to the lifetime of a process.
+Once that process is gone, so is the namespace.
+
+But we can improve this (more on later).
+
+.link http://man7.org/linux/man-pages/man7/namespaces.7.html more documentation
+
+* Namespaces: API
+
+A *Kernel* API, syscalls:
+
+- unshare(2): move calling process in new namespace(s) - and more.
+- setns(2): make the calling process join existing namespace(s)
+- clone(2): create a new process, optionally joining a new namespace - and *much* more.
+
+* Namespaces: what we can unshare?
+
+- cgroup: cgroup root directory (more on that later)
+- ipc: System V IPC, POSIX message queues
+- network: network devices, stacks, ports, etc.
+- mount: mount points
+- pid: process id hierarchy
+- user: user and group IDs
+- uts: hostname and NIS domain name
+- time: the very last addition (linux 5.6)
+
+.link http://man7.org/linux/man-pages/man7/namespaces.7.html more documentation
+
+* Namespaces: /procfs goodies
+
+  Each process has a /proc/$PID/ns/ subdirectory containing one entry
+  for each namespace that supports being manipulated by setns(2)
+
+Actually, the setns(2) syscall accepts a _file_ _descriptor_ as parameter.
+Everything is a file!
+
+  Bind mounting (see mount(2)) one of the files in this directory to
+  somewhere else in the filesystem keeps the corresponding namespace of
+  the process specified by pid alive even if all processes currently in
+  the namespace terminate.
+
+So we can make one namespace outlive a process
+
+.link http://man7.org/linux/man-pages/man7/namespaces.7.html more documentation
+
+* Namespaces DIY: unshare
+
+PID of the current shell:
+
+  ///samurai7/~># echo $$
+  5184
+
+We start a new process (bash) with different network and PID namespaces
+
+  ///samurai7/~># unshare --net --fork --pid --mount-proc bash
+  ///samurai7/~># echo $$
+  1
+  ///samurai7/~># ifconfig
+  ///samurai7/~>#
+
+Let's doublecheck:
+
+  ///samurai7/~># ls -lh /proc/{1,5184,5282}/ns/pid
+  lrwxrwxrwx. 1 root root 0 Feb 21 19:54 /proc/1/ns/pid -> pid:[4026531836]
+  lrwxrwxrwx. 1 root root 0 Feb 21 19:53 /proc/5184/ns/pid -> pid:[4026531836]
+  lrwxrwxrwx. 1 root root 0 Feb 21 19:54 /proc/5282/ns/pid -> pid:[4026532544]
+
+* Namespaces DIY: nsenter
+
+Let's enter the namespaces context we created in the slide before:
+
+  ///samurai7/~># nsenter -a -t 5282 /bin/sh
+  sh-4.4# ps -fauxw
+  USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+  root        32  0.0  0.0 122680  3864 pts/4    S    20:00   0:00 /bin/sh
+  root        33  0.0  0.0 149756  3700 pts/4    R+   20:00   0:00  \_ ps -fauxw
+  root         1  0.0  0.0 123884  5108 pts/2    S+   19:53   0:00 bash
+  sh-4.4# echo $$
+  32
+
+* Namespaces DIY: ip
+
+Let's create a new network namespace `cnt`
+
+  ///samurai7/~># ip netns add cnt
+  ///samurai7/~># ip netns list
+  cnt
+  ///samurai7/~># ls -lh /var/run/netns/cnt
+  -r--r--r--. 1 root root 0 Feb 23 19:15 /var/run/netns/cnt
+
+And we connect it to the outside:
+
+  ///samurai7/~># ip link add veth0 type veth peer name veth1
+  ///samurai7/~># ip link list | grep veth
+  7: veth1@veth0: <BROADCAST,MULTICAST,M-DOWN> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+  8: veth0@veth1: <BROADCAST,MULTICAST,M-DOWN> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+  ///samurai7/~># ip link set veth1 netns cnt
+  ///samurai7/~># ip netns exec cnt ip link list
+  1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+      link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+  7: veth1@if8: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+      link/ether 5a:68:bc:a2:4b:c0 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+
+* Namespaces: wrap up
+
+Namespaces allow us to have separate instances of system resources.
+
+*Operating* *System* resources are still *shared*
+
+With the linux namespaces, we have the bare bones of a simpl{e,istic} container engine!
+
+But much more is needed.
+
+* cgroups: intro
+
+Inception: ~2007. Major update: ~2013
+
+Linux *C* ontrol *Groups*: allow process to be organized in hierarical groups to
+do limiting and accounting of certain system resources.
+
+Most notably, memory and CPU time (and more: block I/O, pids...)
+
+Powerful and easy-as-possible resource control mechanism
+
+But still quite complex to manage
+
+* cgroups: what can we control?
+
+- blkio: limits on input/output access to and from devices
+- cpu: uses the scheduler to provide cgroup tasks access to the CPU
+- cpuacct: automatic reports on CPU resources used by tasks
+- cpuset: assigns individual CPUs and memory nodes to tasks
+- memory: sets limits on memory and reports on memory resources
+- perf_event: performance analysis.
+
+Specific Linux Distribution (e.g. RHEL) may offer more cgroups.
+
+Add your own!
+
+* cgroups: API
+
+Just use sysfs:
+
+  echo browser_pid > /sys/fs/cgroup/<restype>/<userclass>/tasks
+
+command line tools:  cgcreate, cgexec, and cgclassify (from libcgroup).
+
+Or just let your management engine do that for you:
+
+- systemd
+- docker
+- libvirt (spoiler!!)
+
+* cgroups: DIY
+
+Mostly, you don't want to do it :)
+
+.image https://imgs.xkcd.com/comics/automation.png
+
+Seriously, the management tool (whatever it is) almost always Just Works (tm) and
+it is simpler to tune.
+
+* cgroups: wrap-up
+
+CGroups provide resource `limit` and `accounting`
+
+Organized in hierarchies
+
+A *LOT* of subtleties with respect to accounting and sensible limits
+
+Here's why you should not DIY - don't reinvent a square wheel
+
+Deserves a (long) talk on its own
+
+* seccomp
+
+Inception: ~2005; Major update ~2012
+
+Operational modes:
+
+- 0 disabled
+- 1 for strict: only _four_ system calls: read, write, exit, sigreturn
+- 2 for filter: allow developers to write filters to determine if a given syscall can run
+
+* seccomp: API & DIY
+
+Kernel API (syscall), so just prctl(2) and seccomp(2)
+
+And obviously `procfs` interface.
+
+You can add your own syscall filters using *BPF* language (!!!)
+
+Again, better don't reinvent the wheel, just use profiles from your management engine
+
+.link https://lwn.net/Articles/656307/ If you really want to DIY, maybe start here
+
+* SELinux
+
+Inception: ~1998
+
+Adds Mandatory Access Control (MAC) and Role Based Access Control (RBAC) to the linux kernel
+
+Linux, being UNIX-Like, previously supported only Discretionary Access Control
+
+* SELinux: DAC vs MAC vs RBAC
+
+WARNING: brutal semplification ahead
+
+DAC: access control is based on the discretion of the owner: root can do anything.
+
+MAC: the system (and not the users) specifies which can access what: no, even root _cannot_ do that.
+
+RBAC: in a nutshell, generalization of MAC: create and manage _Roles_ to specify which entity can access which data.
+
+.link https://en.wikipedia.org/wiki/Role-based_access_control beware: Again: the world is much more complex than that...
+
+* SELINUX: Daily usage
+
+Mostly used on CentOS, Fedora, RHEL, RHEL-derived distributions
+
+SELinux used to be perceived as overly complex, and overly annoying too.
+
+"Just disable SELinux" was a recurrent advice up until not so long ago
+
+It got *EXTREMELY* better: most of time, you don't even notice it is running. Just Works (tm)
+
+Except when it prevents exploits :)
+
+If you need to troubleshoot something, `audit2why` is usally a great start
+
+Again, most often just use the profiles your distribution/management engine provides
+
+.link http://selinuxproject.org/page/Main_Page Lots of documentation available
+
+* It's all about the layering
 
 * The fallout
 
