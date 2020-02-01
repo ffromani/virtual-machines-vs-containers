@@ -11,15 +11,18 @@ http://github.com/{mojaves,fromanirh}
 * whoami
 
 - sweng @ Red Hat: opinions and mistakes are my own!
-- works daily(-ish): golang, kubernetes, podman
+- daily toolset: golang, kubernetes, podman
+- worked with VMs: ~2013 - ~2018
+- worked with containers: ~2018 - ...
 - interested in: more, golang, more containers, lisp (someday!)
 - happy linux user (red hat linux, debian, ubuntu, fedora)
 - geek
 
 * Outline
 
-- Dramatis personae: VMs & containers
-- Isolation technologies
+- Dramatis personae
+- How a container is made
+- How a (K)VM is made
 - The Fallout
 
 * STANDARD DISCLAIMER
@@ -28,9 +31,20 @@ Software Engineer, not security expert!
 
 Mistakes may happen - please point them out!
 
-All opionions are mine only
+All opinions are mine only
 
-* Dramatis personae: VMs & containers
+* Versus?
+
+There is a perception of competing technologies
+
+Mid-Late 2000s (~2004 - ~2010) was all about VMs
+Mid-Late 2010s (~2014 - ~2020) is all about containers
+
+Sometimes containers advertised as "better" (easier, less resources) virtualization
+
+Is that really the case?
+
+* Dramatis personae
 
 * Virtual Machines
 
@@ -41,8 +55,6 @@ All opionions are mine only
 "Modern hypervisors use hardware-assisted virtualization, virtualization-specific hardware, primarily from the host CPUs."
 
 .link https://en.wikipedia.org/wiki/Virtual_machine source: wikipedia
-
-That's QEMU+KVM(+virtio)
 
 * Virtual Machines (2)
 
@@ -67,35 +79,7 @@ That's cgroups+seccomp+selinux+namespaces... All conveniently packed in a contai
 .image images/diagrams/vms_vs_containers.png 520 _
 .caption "(Linux) VMs vs Containers block diagram" - (C) Francesco Romani 2019 - CC by-sa 4.0
 
-* Are containers the next step after VMs?
-
-Everyone is talking about containers now!
-
-Everyone was crazed about VMs back in the early 2000s
-
-
-* The right tool for the right job?
-
-Are Containers and VMs competing technologies?
-
-Which problem are we trying to solve?
-
-Different tools shape different solutions ("if you have a hammer...")
-
-No real autopick (sorry!)
-
-* Containerized applications
-
-A containerized application is the set of files needed to an application to run as container, packaged in a specific format (image).
-
-.image images/Container_crane_and_MSC_Sola.jpg 400 _
-.caption "Containers are being loaded on the container ship MSC Sola at the container terminal of Bremerhaven in Germany" by Tvabutzku1234, public domain, from Wikimedia Commons
-
-* Appliances
-
-TBD
-
-* Isolation technologies
+* How a container is made
 
 * A recipe for containers
 The basic building blocks:
@@ -352,8 +336,33 @@ Again, most often just use the profiles your distribution/management engine prov
 
 .link http://selinuxproject.org/page/Main_Page Lots of documentation available
 
-* It's all about the layering
+* How a (K)VM is made
+
+* It all starts with an emulator
+
+* Hypervisors
+
+* Acceleration
+
+* Virtualized vs Paravirtualized devices
+
+* TODO
 
 * The fallout
+
+* What's so hot about containers?
+
+A containerized application is the set of files needed to an application to run as container, packaged in a specific format (image).
+
+.image images/Container_crane_and_MSC_Sola.jpg 400 _
+.caption "Containers are being loaded on the container ship MSC Sola at the container terminal of Bremerhaven in Germany" by Tvabutzku1234, public domain, from Wikimedia Commons
+
+* It's about the distribution, not about the isolation
+
+* Availability is the key
+
+systemd...
+
+* QubeOS
 
 * Q? A!
