@@ -35,14 +35,12 @@ All opinions are mine only
 
 * Versus?
 
-There is a perception of competing technologies
-
 Mid-Late 2000s (~2004 - ~2010) was all about VMs
 Mid-Late 2010s (~2014 - ~2020) is all about containers
 
-Sometimes containers advertised as "better" (easier, less resources) virtualization
+Containers (initially?) advertised as "better" (easier, simpler less resources) virtualization
 
-Is that really the case?
+Different tools, some overlap in the use cases, large overlap in the technology stack.
 
 * Dramatis personae
 
@@ -338,31 +336,160 @@ Again, most often just use the profiles your distribution/management engine prov
 
 * How a (K)VM is made
 
-* It all starts with an emulator
+* Preamble
 
-* Hypervisors
+VMs went a long way - even on x86
 
-* Acceleration
+We will focus only on the "winner stack": [VT-x/SVM +] KVM + QEMU (e.g. not Xen)
 
-* Virtualized vs Paravirtualized devices
+The history is more complex
 
-* TODO
+* The modern Linux virtualization stack
+
+- HW-assisted virtualization: Intel VT-x, AMD SVM
+- KVM: Linux (lightweight but complete) Hypervisor, makes use of HW-assisted virtualization
+- QEMU: System emulator, provides I/O, management layer, uses KVM for acceleration
+- Libvirt: better management layer, adds isolation/containment to QEMU instances
+
+* Concepts: Hypervisor
+
+A hypervisor a supervisor-of-supervisor
+
+The kernel is a supervisor
+
+A hypervisor allows to run Virtual Machines (OSes inside OSes)
+
+KVM makes the Linux kernel a hypervisor
+
+Of course you can still run regular processes alongside VMs!
+Linx + KVM is both a hypervisor and a supervisor (not always the case).
+
+* Concepts: x86 hw-assisted virtualization
+
+We'll just cover the basics - otherwise there's material worth few slide decks...
+
+- New x86 instructions (like MMX, SSE*, AVX...)
+- Introduced by Intel (2005) and AMD (2006)
+- From user perspective, nowadays (2020) pretty much equivalent
+- Both supported by KVM
+- Both allowes nested VMs (VMs inside VMs) 
+
+* Concepts: virtualized vs paravirtualized
+
+(Full-)virtualization: the guest OS is not aware it runs in a VM.
+
+Paravirtualization: the guest OS is aware it is running in a VM.
+- Special device/device drivers (virtio)
+- The guest OS may adjust itself (e.g. scheduler, host-provided hints) 
+
+* HW-assisted x86 virtualization, in a nutshell
+
+- New CPU operational mode `root` and `non-root`.
+- New modes orthogonal to both cpu mode (real, protected, long) and privilege (0-3).
+- Hypervisor run in root mode
+- VMs run in non-root mode.
+- Provileged instructions *which also change the context of the CPU* (clock, interrupt regs, control regs) cannot be executed in non-root mode.
+
+* Some VT-x instructions
+
+- *VMXON*: enables virtualization support. Must be called first. Leaves CPU in root mode.
+- *VMLAUNCH*: creates a VM and enters non-root mode.
+- *VMRESUME*: (re-)enters non-root mode for an existing VM.
+- *VMREAD*/*VMWRITE*: access VMCS.
+
+* VMEXITs
+
+*vmexit*: When a VM tries to execute a CPU-state-changing operation, disallowrd in non-root mode, the CPU switches back to root mode (like a trap).
+
+After a vmexit, the hypervisor must take actions to let the VM resume its operations, and then call *VMRESUME*
+
+How does the hypervisor know *WHY* a vmexit happened?
+
+* VMCSes
+
+Each VM instance has a *Virtual* *Machine* *Control* *Structure* (VMCS),
+a 4 KiB segment which contains the VM context.
+
+The VMCS holds the virtual CPU state (as seen by the guest)
+The VMCS holds the reason why a vmexit happen.
+
+* The x86 virtualization in a nutshell
+
+The key component of the X86 virtualization is the interaction between root and non-root code:
+
+hypervisor -> VMLAUNCH -> vmexit -> [hypervisor actions from VMCS data] -> VMRESUME
+
+* KVM
+
+* QEMU
+
+* Libvirt
 
 * The fallout
 
-* What's so hot about containers?
+* Containers as amalgamation of technologies
 
-A containerized application is the set of files needed to an application to run as container, packaged in a specific format (image).
+Containers don't exist -YET- as proper linux objects
 
-.image images/Container_crane_and_MSC_Sola.jpg 400 _
-.caption "Containers are being loaded on the container ship MSC Sola at the container terminal of Bremerhaven in Germany" by Tvabutzku1234, public domain, from Wikimedia Commons
+Containers are made of a set of linux technologies which create isolation layer(s) around regular processes
 
-* It's about the distribution, not about the isolation
+* Containers are turbo-charged processes
 
-* Availability is the key
+Wait, QEMU is a process too!
 
-systemd...
+So what does prevent us to use the same isolation technologies around Virtual Machines?
 
-* QubeOS
+* Extra-isolated VMs
+
+THe modern linux (virtualization) stack *IS* using a good chunk of isolation technologies around VMs
+
+Defense in depth
+
+Libvirt uses SELinux (if available) to restrict the VM behaviour
+
+Systemd provides cgroup isolation out of the box
+
+* Container building blocks integration
+
+The technologies powering containers are being "pushed down" the linux kernel stack
+
+<picture>
+
+* Container building blocks integration /2
+
+The modern linux systems are gaining more and more container-like capabilities out of the box
+
+Will container just disappear in the future?
+
+Meaning, will they just become yet another type of service units?
+
+* What's a container, really?
+
+If a container is a way to run isolated workloads, the basic linux system are gaining capabilities to run them
+- systemd (and more to come)
+- podman?
+
+If a container is a way to _ship_ software, that's a completely different story.
+
+Let's not open the pandora's box of (linux) software packaging.
+
+* So are container going to disappear?
+
+It's hard to make predictions, especially about the future :)
+
+* Are VM going to disappear?
+
+It's hard to make predictions, especially about the future :)
+
+But VMs survived the container revolution.
+
+VMs provide a _different_ toolset.
+
+Actually VMs and containers are going to be integrated:
+
+See:
+- kubevirt
+- kata containers
+- ...
 
 * Q? A!
