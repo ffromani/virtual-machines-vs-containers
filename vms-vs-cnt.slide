@@ -42,6 +42,12 @@ Containers (initially?) advertised as "better" (easier, simpler less resources) 
 
 Different tools, some overlap in the use cases, large overlap in the technology stack.
 
+* From a security perspective?
+
+It's (mostly) about isolating workloads
+
+As usual, a lots of tradeoff are involved
+
 * Dramatis personae
 
 * Virtual Machines
@@ -421,9 +427,51 @@ hypervisor -> VMLAUNCH -> vmexit -> [hypervisor actions from VMCS data] -> VMRES
 
 * KVM
 
+In a nutshell
+- Turns Linux into a hypervisor
+- built on top  of hardware virtualization (VT-x, SVM)
+- API as device `/dev/kvm`, `ioctl()s`
+
+Do not use directly! (use qemu! or kvmtool or pretty much any other linux tool)
+
+QEMU uses it as accelerator
+
 * QEMU
 
+- Can emulate hardware
+- Used in the virtualization stack to handle I/O (device emulation)
+- Uses KVM to achieve near-native execution speed
+- I/O speed close to native with paravirtualization
+- Large, complex software
+- command line only tool - not easy to manage
+
 * Libvirt
+
+- toolkit to manage virtualization platform
+- QEMU+KVM is the most popular (and developed) target
+- stable interface
+- applies additional *isolation* *layers* around QEMU
+
+libvirt + systemd = {cgroups, selinux} around QEMU
+
+* Wrapping up
+
+* VMs
+- OS-inside-OS
+- *perceived* as heavyeight, slow to spin up, hard to manage
+- guest apps interact with guest Kernel
+- actually two layers of operating system around your code
+- more layers -> more code -> more bugs
+- VM escape techniques do exist
+- still the greatest possible isolation
+
+* Containers
+- shared kernel with host OS
+- easy and lightweight to get started - aka nice scaling down
+- guest apps interact with host kernel - but they believe they are alone :)
+- made popular by docker
+- friendlier tooling overall?
+- weak isolation
 
 * The fallout
 
@@ -485,7 +533,10 @@ But VMs survived the container revolution.
 
 VMs provide a _different_ toolset.
 
-Actually VMs and containers are going to be integrated:
+* Do we really have to choose?
+
+VM resurgence!
+VMs and containers are going to be integrated:
 
 See:
 - kubevirt
