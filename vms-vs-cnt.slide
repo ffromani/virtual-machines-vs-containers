@@ -44,7 +44,11 @@ Different tools, some overlap in the use cases, large overlap in the technology 
 
 * From a security perspective?
 
+The cloud use case
+
 It's (mostly) about isolating workloads
+
+What about software distribution?
 
 As usual, a lots of tradeoff are involved
 
@@ -85,6 +89,11 @@ That's cgroups+seccomp+selinux+namespaces... All conveniently packed in a contai
 
 * How a container is made
 
+* Meet the containers
+
+.image images/Container_crane_and_MSC_Sola.jpg 420 _
+.caption "Containers are being loaded on the container ship MSC Sola at the container terminal of Bremerhaven in Germany" by Tvabutzku1234, public domain, from Wikimedia Commons
+
 * A recipe for containers
 The basic building blocks:
 - namespaces: process isolation
@@ -109,8 +118,6 @@ A namespace...
 Namespaces are _ephemeral_ by default: they are tied to the lifetime of a process.
 Once that process is gone, so is the namespace.
 
-But we can improve this (more on later).
-
 .link http://man7.org/linux/man-pages/man7/namespaces.7.html more documentation
 
 * Namespaces: API
@@ -131,23 +138,6 @@ A *Kernel* API, syscalls:
 - user: user and group IDs
 - uts: hostname and NIS domain name
 - time: the very last addition (linux 5.6)
-
-.link http://man7.org/linux/man-pages/man7/namespaces.7.html more documentation
-
-* Namespaces: /procfs goodies
-
-  Each process has a /proc/$PID/ns/ subdirectory containing one entry
-  for each namespace that supports being manipulated by setns(2)
-
-Actually, the setns(2) syscall accepts a _file_ _descriptor_ as parameter.
-Everything is a file!
-
-  Bind mounting (see mount(2)) one of the files in this directory to
-  somewhere else in the filesystem keeps the corresponding namespace of
-  the process specified by pid alive even if all processes currently in
-  the namespace terminate.
-
-So we can make one namespace outlive a process
 
 .link http://man7.org/linux/man-pages/man7/namespaces.7.html more documentation
 
@@ -185,29 +175,6 @@ Let's enter the namespaces context we created in the slide before:
   root         1  0.0  0.0 123884  5108 pts/2    S+   19:53   0:00 bash
   sh-4.4# echo $$
   32
-
-* Namespaces DIY: ip
-
-Let's create a new network namespace `cnt`
-
-  ///samurai7/~># ip netns add cnt
-  ///samurai7/~># ip netns list
-  cnt
-  ///samurai7/~># ls -lh /var/run/netns/cnt
-  -r--r--r--. 1 root root 0 Feb 23 19:15 /var/run/netns/cnt
-
-And we connect it to the outside:
-
-  ///samurai7/~># ip link add veth0 type veth peer name veth1
-  ///samurai7/~># ip link list | grep veth
-  7: veth1@veth0: <BROADCAST,MULTICAST,M-DOWN> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
-  8: veth0@veth1: <BROADCAST,MULTICAST,M-DOWN> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
-  ///samurai7/~># ip link set veth1 netns cnt
-  ///samurai7/~># ip netns exec cnt ip link list
-  1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group default qlen 1000
-      link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-  7: veth1@if8: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
-      link/ether 5a:68:bc:a2:4b:c0 brd ff:ff:ff:ff:ff:ff link-netnsid 0
 
 * Namespaces: wrap up
 
@@ -342,6 +309,11 @@ Again, most often just use the profiles your distribution/management engine prov
 
 * How a (K)VM is made
 
+* Virtual Machines
+
+.image images/virt-manager-details.png 480 _
+.caption virt-manager screenshot, from https://www.virt-manager.org/wp-content/uploads/2014/01/details.png
+
 * Preamble
 
 VMs went a long way - even on x86
@@ -394,7 +366,7 @@ Paravirtualization: the guest OS is aware it is running in a VM.
 - New modes orthogonal to both cpu mode (real, protected, long) and privilege (0-3).
 - Hypervisor run in root mode
 - VMs run in non-root mode.
-- Provileged instructions *which also change the context of the CPU* (clock, interrupt regs, control regs) cannot be executed in non-root mode.
+- Provileged instructions *which* *also* *change* *the* *context* *of* *the* *CPU* (clock, interrupt regs, control regs) cannot be executed in non-root mode.
 
 * Some VT-x instructions
 
@@ -454,7 +426,7 @@ QEMU uses it as accelerator
 
 libvirt + systemd = {cgroups, selinux} around QEMU
 
-* Wrapping up
+* Wrapping up - and some musings about security
 
 * VMs
 - OS-inside-OS
@@ -473,7 +445,7 @@ libvirt + systemd = {cgroups, selinux} around QEMU
 - friendlier tooling overall?
 - weak isolation
 
-* The fallout
+* The fallout - and more musings about security
 
 * Containers as amalgamation of technologies
 
@@ -481,11 +453,17 @@ Containers don't exist -YET- as proper linux objects
 
 Containers are made of a set of linux technologies which create isolation layer(s) around regular processes
 
+.image images/19th_century_knowledge_mechanisms_homemade_concrete_block_mold_parts.jpg _ 320
+.caption "19th century knowledge mechanisms homemade concrete block mold parts" by Henry Colin Campbell, Public Domain, from Wikimedia Commons
+
 * Containers are turbo-charged processes
 
 Wait, QEMU is a process too!
 
 So what does prevent us to use the same isolation technologies around Virtual Machines?
+
+.image images/479px-Columbus_Breaking_the_Egg_MET_DP825004.jpg _ 300
+.caption Columbus Breaking the Egg, CC0, From Wikimedia Commons
 
 * Extra-isolated VMs
 
