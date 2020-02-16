@@ -489,7 +489,7 @@ So what does prevent us to use the same isolation technologies around Virtual Ma
 
 * Extra-isolated VMs
 
-THe modern linux (virtualization) stack *IS* using a good chunk of isolation technologies around VMs
+The modern linux (virtualization) stack *IS* using a good chunk of isolation technologies around VMs
 
 Defense in depth
 
