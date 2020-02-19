@@ -42,6 +42,9 @@ Containers (initially?) advertised as "better" (easier, simpler less resources) 
 
 Different tools, some overlap in the use cases, large overlap in the technology stack.
 
+: mention the buzz
+: mention the common use cases
+
 * From a security perspective?
 
 The cloud use case
@@ -52,7 +55,12 @@ What about software distribution?
 
 As usual, a lots of tradeoff are involved
 
+: actually, why do we want to we use containers/vms?
+: the cloud perspective
+
 * Dramatis personae
+
+: go quite fast here, not too many details
 
 * Virtual Machines
 
@@ -103,6 +111,9 @@ Security enforcement tools:
 - seccomp: limit syscall usage
 - SELinux: mandatory access control
 - linux capabilities: finer-grained privileges
+
+: let's have a quick rundown about what makes a container
+: NOT talk about break-out techniques :)
 
 * Namespaces: Intro
 
@@ -163,6 +174,9 @@ Let's doublecheck:
   lrwxrwxrwx. 1 root root 0 Feb 21 19:53 /proc/5184/ns/pid -> pid:[4026531836]
   lrwxrwxrwx. 1 root root 0 Feb 21 19:54 /proc/5282/ns/pid -> pid:[4026532544]
 
+: mention the fd interface and its relationship with pods
+: that's why we have so many "pause" containers
+
 * Namespaces DIY: nsenter
 
 Let's enter the namespaces context we created in the slide before:
@@ -198,6 +212,8 @@ Most notably, memory and CPU time (and more: block I/O, pids...)
 Powerful and easy-as-possible resource control mechanism
 
 But still quite complex to manage
+
+: resource accounting and control
 
 * cgroups: what can we control?
 
@@ -377,7 +393,7 @@ Paravirtualization: the guest OS is aware it is running in a VM.
 
 * VMEXITs
 
-*vmexit*: When a VM tries to execute a CPU-state-changing operation, disallowrd in non-root mode, the CPU switches back to root mode (like a trap).
+*vmexit*: When a VM tries to execute a CPU-state-changing operation, disallowed in non-root mode, the CPU switches back to root mode (like a trap).
 
 After a vmexit, the hypervisor must take actions to let the VM resume its operations, and then call *VMRESUME*
 
@@ -417,6 +433,8 @@ QEMU uses it as accelerator
 - Large, complex software
 - command line only tool - not easy to manage
 
+: mention and talk about the "bloat"
+
 * Libvirt
 
 - toolkit to manage virtualization platform
@@ -425,6 +443,8 @@ QEMU uses it as accelerator
 - applies additional *isolation* *layers* around QEMU
 
 libvirt + systemd = {cgroups, selinux} around QEMU
+
+: libvirt as management layers
 
 * Wrapping up - and some musings about security
 
@@ -465,6 +485,8 @@ So what does prevent us to use the same isolation technologies around Virtual Ma
 .image images/479px-Columbus_Breaking_the_Egg_MET_DP825004.jpg _ 300
 .caption Columbus Breaking the Egg, CC0, From Wikimedia Commons
 
+: OTOH, additional protection layers are an attack surface too!
+
 * Extra-isolated VMs
 
 The modern linux (virtualization) stack *IS* using a good chunk of isolation technologies around VMs
@@ -477,9 +499,10 @@ Systemd provides cgroup isolation out of the box
 
 * Container building blocks integration
 
-The technologies powering containers are being "pushed down" the linux kernel stack
+The technologies powering containers are being pushed down the linux kernel stack
 
-<picture>
+.image images/diagrams/systemstack.png 440 _
+.caption "(Linux) container stack evolution block diagram" - (C) Francesco Romani 2020 - CC by-sa 4.0
 
 * Container building blocks integration /2
 
